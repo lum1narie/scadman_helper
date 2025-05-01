@@ -163,9 +163,6 @@ unused_results = "warn"
 variant-size-differences = "warn"
 
 [dependencies]
-ambassador = "0.4.1"
-derive_builder = "0.20.2"
-derive_more = { version = "1.0.0", features = ["deref", "from"] }
+itertools = "0.14.0"
 nalgebra = "0.33.2"
-paste = "1.0.15"
 scadman = { git = "https://github.com/lum1narie/scadman.git", tag = "v0.3.0", version = "0.3.0" }
