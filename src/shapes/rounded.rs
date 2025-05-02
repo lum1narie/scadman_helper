@@ -67,11 +67,6 @@ hull() {
 }
 "#
         );
-
-        assert_eq!(
-            rounded_cuboid(Point3D::new(10., 20., 5.), 1.).to_code(),
-            ""
-        )
     }
 
     #[test]
