@@ -8,6 +8,8 @@ use scadman::prelude::*;
 
 pub mod geometry;
 pub mod shapes;
+#[cfg(test)]
+mod test_utils;
 
 /// Converts a 3D rotation matrix into Euler angles (XYZ) in radians.
 ///

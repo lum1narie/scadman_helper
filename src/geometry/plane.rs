@@ -190,28 +190,12 @@ impl Plane {
 mod tests {
     #![allow(clippy::shadow_unrelated)]
 
+    use crate::test_utils::assert_approx_eq_vec;
 
-    fn assert_approx_eq_float(a: f64, b: f64, tol: f64) {
-        assert!(
-            (a - b).abs() < tol,
-            "Floats {} and {} are not approximately equal within tolerance {}",
-            a,
-            b,
-            tol
-        );
-    }
     use super::*;
+    use nalgebra as na;
     use scadman::scad_sentence::Rotate3DAngle;
 
-    fn assert_approx_eq_vec(a: Vector3<f64>, b: Vector3<f64>, tol: f64) {
-        assert!(
-            (a - b).norm() < tol,
-            "Vectors {:?} and {:?} are not approximately equal within tolerance {}",
-            a,
-            b,
-            tol
-        );
-    }
     const TOLERANCE: f64 = 1e-3; // Use a slightly larger tolerance for comparisons
 
     #[test]
