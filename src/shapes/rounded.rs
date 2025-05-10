@@ -1,6 +1,32 @@
+//! Provides functions for creating rounded shapes.
+//!
+//! This module contains implementations for generating shapes with rounded edges
+//! and corners, such as rounded cuboids.
+
 use itertools::iproduct;
 use scadman::prelude::*;
 
+/// Creates a rounded cuboid.
+///
+/// This function generates a rounded cuboid by hulling spheres,
+/// placed at the corners of the cuboid's core
+/// (the cuboid size minus twice the radius).
+///
+/// # Arguments
+///
+/// * `size` - The total size of the cuboid including the rounded corners.
+/// * `radius` - The radius of the rounding spheres.
+///              Must be positive and less than or equal to
+///              half of the smallest dimension of `size`.
+///
+/// # Returns
+///
+/// A [`ScadObject`] representing the rounded cuboid.
+///
+/// # Panics
+///
+/// Panics if `radius` is not positive
+/// or if any dimension of `size` is less than `radius * 2.`.
 pub fn rounded_cuboid(size: Point3D, radius: Unit) -> ScadObject {
     assert!(radius > 0.);
     assert!(size.x >= radius * 2.);
@@ -10,15 +36,12 @@ pub fn rounded_cuboid(size: Point3D, radius: Unit) -> ScadObject {
     let ys = [radius, size.y - radius];
     let zs = [radius, size.z - radius];
 
-    let positions = iproduct!(&xs, &ys, &zs)
-        .map(|(&x, &y, &z)| [x, y, z])
-        .collect::<Vec<_>>();
+    let positions_iter = iproduct!(&xs, &ys, &zs).map(|(&x, &y, &z)| [x, y, z]);
 
     modifier_3d_commented(
         Hull::new(),
         block_3d(
-            &positions
-                .into_iter()
+            &positions_iter
                 .map(|v| {
                     modifier_3d(
                         Translate3D::build_with(|tb| {
@@ -46,7 +69,7 @@ mod tests {
     fn test_rounded_cuboid() {
         assert_eq!(
             rounded_cuboid(Point3D::new(5., 3., 4.), 1.).to_code(),
-            r#"/* rounded_cuboid([5, 3, 4], 1) */
+            r"/* rounded_cuboid([5, 3, 4], 1) */
 hull() {
   translate([1, 1, 1])
     sphere(r = 1, $fn = 64);
@@ -65,7 +88,7 @@ hull() {
   translate([4, 2, 3])
     sphere(r = 1, $fn = 64);
 }
-"#
+"
         );
     }
 
