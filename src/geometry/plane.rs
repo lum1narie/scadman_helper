@@ -209,18 +209,45 @@ mod tests {
     #[test]
     fn test_is_parallel() {
         // Parallel
-        assert!(is_parallel(na::vector![1., 0., 0.], na::vector![2., 0., 0.]));
-        assert!(is_parallel(na::vector![1., 2., 3.], na::vector![2., 4., 6.]));
-        assert!(is_parallel(na::vector![1., 0., 0.], na::vector![-2., 0., 0.]));
-        assert!(is_parallel(na::vector![1., 2., 3.], na::vector![-2., -4., -6.]));
+        assert!(is_parallel(
+            na::vector![1., 0., 0.],
+            na::vector![2., 0., 0.]
+        ));
+        assert!(is_parallel(
+            na::vector![1., 2., 3.],
+            na::vector![2., 4., 6.]
+        ));
+        assert!(is_parallel(
+            na::vector![1., 0., 0.],
+            na::vector![-2., 0., 0.]
+        ));
+        assert!(is_parallel(
+            na::vector![1., 2., 3.],
+            na::vector![-2., -4., -6.]
+        ));
         // Orthogonal
-        assert!(!is_parallel(na::vector![1., 0., 0.], na::vector![0., 1., 0.]));
+        assert!(!is_parallel(
+            na::vector![1., 0., 0.],
+            na::vector![0., 1., 0.]
+        ));
         // Neither parallel nor orthogonal
-        assert!(!is_parallel(na::vector![1., 1., 0.], na::vector![1., 0., 1.]));
+        assert!(!is_parallel(
+            na::vector![1., 1., 0.],
+            na::vector![1., 0., 1.]
+        ));
         // Zero vector cases
-        assert!(!is_parallel(na::vector![0., 0., 0.], na::vector![1., 0., 0.]));
-        assert!(!is_parallel(na::vector![1., 0., 0.], na::vector![0., 0., 0.]));
-        assert!(!is_parallel(na::vector![0., 0., 0.], na::vector![0., 0., 0.]));
+        assert!(!is_parallel(
+            na::vector![0., 0., 0.],
+            na::vector![1., 0., 0.]
+        ));
+        assert!(!is_parallel(
+            na::vector![1., 0., 0.],
+            na::vector![0., 0., 0.]
+        ));
+        assert!(!is_parallel(
+            na::vector![0., 0., 0.],
+            na::vector![0., 0., 0.]
+        ));
         // Close to parallel
         assert!(is_parallel(
             na::vector![1., 0., 0.],
@@ -257,7 +284,11 @@ mod tests {
         let axis = na::vector![1., 0., 0.];
         let result = orthogonalize(target, axis);
         assert!(result.is_some());
-        assert_approx_eq_vec(result.unwrap(), na::vector![0., 1., 1.].normalize(), TOLERANCE);
+        assert_approx_eq_vec(
+            result.unwrap(),
+            na::vector![0., 1., 1.].normalize(),
+            TOLERANCE,
+        );
 
         // Parallel vectors
         let target = na::vector![2., 0., 0.];
@@ -322,7 +353,11 @@ mod tests {
         let plane = plane_opt.unwrap();
         assert_approx_eq_vec(plane.origin, origin, TOLERANCE);
         // y_axis should be orthogonalized w.r.t x_axis and normalized
-        assert_approx_eq_vec(plane.y_axis, na::vector![0., -1., 0.].normalize(), TOLERANCE);
+        assert_approx_eq_vec(
+            plane.y_axis,
+            na::vector![0., -1., 0.].normalize(),
+            TOLERANCE,
+        );
 
         // Parallel axes
         let x_axis = na::vector![1., 0., 0.];
