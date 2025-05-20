@@ -163,6 +163,7 @@ unused_results = "warn"
 variant-size-differences = "warn"
 
 [dependencies]
+float-cmp = "0.10.0"
 itertools = "0.14.0"
 nalgebra = "0.33.2"
 scadman = { git = "https://github.com/lum1narie/scadman.git", tag = "v0.3.0", version = "0.3.0" }
