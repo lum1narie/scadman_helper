@@ -8,6 +8,8 @@ use scadman::prelude::*;
 
 pub mod geometry;
 pub mod shapes;
+pub mod transform;
+
 #[cfg(test)]
 mod test_utils;
 
