@@ -292,8 +292,9 @@ dependencies = [
 
 [[package]]
 name = "scadman"
-version = "0.3.0"
-source = "git+https://github.com/lum1narie/scadman.git?tag=v0.3.0#558bedfbc5b89fc78e5e809ef337bc42c4a0d697"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "89301a36c2ad0f4ef5d8d7e8e911794e12a876eff411465f7e5aa393e9a13eb2"
 dependencies = [
  "ambassador",
  "derive_builder",
