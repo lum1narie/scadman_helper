@@ -1,5 +1,8 @@
 [package]
 name = "scadman_helper"
+description = "Helper library for scadman."
+license = "MIT"
+repository = "https://github.com/lum1narie/scadman_helper"
 version = "0.1.0"
 edition = "2021"
 rust-version = "1.85"
@@ -163,9 +166,7 @@ unused_results = "warn"
 variant-size-differences = "warn"
 
 [dependencies]
-ambassador = "0.4.1"
-derive_builder = "0.20.2"
-derive_more = { version = "1.0.0", features = ["deref", "from"] }
-nalgebra = "0.33.2"
-paste = "1.0.15"
-scadman = { git = "https://github.com/lum1narie/scadman.git", tag = "v0.3.0", version = "0.3.0" }
+float-cmp = "^0.10.0"
+itertools = "^0.14.0"
+nalgebra = "^0.33.2"
+scadman = "^0.1.0"

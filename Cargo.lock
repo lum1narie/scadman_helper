@@ -8,7 +8,7 @@ version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6b27ba24e4d8a188489d5a03c7fabc167a60809a383cdb4d15feb37479cd2a48"
 dependencies = [
- "itertools",
+ "itertools 0.10.5",
  "proc-macro2",
  "quote",
  "syn 1.0.109",
@@ -128,6 +128,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "48c757948c5ede0e46177b7add2e67155f70e33c07fea8284df6576da70b3719"
 
 [[package]]
+name = "float-cmp"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b09cf3155332e944990140d967ff5eceb70df778b34f77d8075db46e4704e6d8"
+dependencies = [
+ "num-traits",
+]
+
+[[package]]
 name = "fnv"
 version = "1.0.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -144,6 +153,15 @@ name = "itertools"
 version = "0.10.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b0fd2260e829bddf4cb6ea802289de2f86d6a7a690192fbe91b3f46e0f2c8473"
+dependencies = [
+ "either",
+]
+
+[[package]]
+name = "itertools"
+version = "0.14.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2b192c782037fadd9cfa75548310488aabdbf3d2da73885b31bd0abd03351285"
 dependencies = [
  "either",
 ]
@@ -274,8 +292,9 @@ dependencies = [
 
 [[package]]
 name = "scadman"
-version = "0.3.0"
-source = "git+https://github.com/lum1narie/scadman.git?tag=v0.3.0#558bedfbc5b89fc78e5e809ef337bc42c4a0d697"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "89301a36c2ad0f4ef5d8d7e8e911794e12a876eff411465f7e5aa393e9a13eb2"
 dependencies = [
  "ambassador",
  "derive_builder",
@@ -288,11 +307,9 @@ dependencies = [
 name = "scadman_helper"
 version = "0.1.0"
 dependencies = [
- "ambassador",
- "derive_builder",
- "derive_more",
+ "float-cmp",
+ "itertools 0.14.0",
  "nalgebra",
- "paste",
  "scadman",
 ]
 
