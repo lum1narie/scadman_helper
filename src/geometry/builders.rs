@@ -19,7 +19,7 @@ use scadman::prelude::*;
 /// # Returns
 ///
 /// A `ScadObject` representing the generated cuboid.
-fn cuboid_from_to(p0: Point3D, p1: Point3D) -> ScadObject {
+pub fn cuboid_from_to(p0: Point3D, p1: Point3D) -> ScadObject {
     let from = Point3D::new(p0.x.min(p1.x), p0.y.min(p1.y), p0.z.min(p1.z));
     let to = Point3D::new(p0.x.max(p1.x), p0.y.max(p1.y), p0.z.max(p1.z));
 
@@ -56,7 +56,7 @@ fn cuboid_from_to(p0: Point3D, p1: Point3D) -> ScadObject {
 /// # Returns
 ///
 /// A `ScadObject` representing the generated square.
-fn square_from_to(p0: Point2D, p1: Point2D) -> ScadObject {
+pub fn square_from_to(p0: Point2D, p1: Point2D) -> ScadObject {
     let from = Point2D::new(p0.x.min(p1.x), p0.y.min(p1.y));
     let to = Point2D::new(p0.x.max(p1.x), p0.y.max(p1.y));
 
