@@ -41,7 +41,14 @@ impl Honeycomb {
     /// * `depth` - The depth of the pattern.
     /// * `vesel` - The distance from the edge
     ///             to the outermost edge of the hexagonal cells.
-    pub const fn new(d: Unit, t: Unit, width: Unit, height: Unit, depth: Unit, vesel: Unit) -> Self {
+    pub const fn new(
+        d: Unit,
+        t: Unit,
+        width: Unit,
+        height: Unit,
+        depth: Unit,
+        vesel: Unit,
+    ) -> Self {
         Self {
             d,
             t,
@@ -89,7 +96,10 @@ impl Honeycomb {
                     let _ = rb.deg([0., 0., 30.]);
                 }),
                 primitive_3d(Cylinder::build_with(|cb| {
-                    let _ = cb.d(hex_d).h(3.0_f64.mul_add(OVERLAP_SMALL, self.depth)).r#fn(6_u64);
+                    let _ = cb
+                        .d(hex_d)
+                        .h(3.0_f64.mul_add(OVERLAP_SMALL, self.depth))
+                        .r#fn(6_u64);
                 })),
             ),
         )
