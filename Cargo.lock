@@ -307,6 +307,7 @@ dependencies = [
 name = "scadman_helper"
 version = "0.1.0"
 dependencies = [
+ "approx",
  "float-cmp",
  "itertools 0.14.0",
  "nalgebra",
