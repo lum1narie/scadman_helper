@@ -2,7 +2,6 @@
 
 use std::f64::consts::PI;
 
-use nalgebra as na;
 use scadman::prelude::*;
 
 use crate::transform::map::map_translate_3d;
@@ -34,13 +33,18 @@ impl Honeycomb {
     ///
     /// # Arguments
     ///
-    /// * `d` - The diameter of each hexagonal cell. (distance across parallel edges).
+    /// * `d` - The diameter of each hexagonal cell.
+    ///         (distance across parallel edges).
     /// * `t` - The thickness of the walls between cells.
     /// * `width` - The overall width of the pattern.
     /// * `height` - The overall height of the pattern.
     /// * `depth` - The depth of the pattern.
     /// * `vesel` - The distance from the edge
     ///             to the outermost edge of the hexagonal cells.
+    ///
+    /// # Returns
+    ///
+    /// A new `Honeycomb` instance.
     pub const fn new(
         d: Unit,
         t: Unit,
@@ -62,6 +66,10 @@ impl Honeycomb {
     /// Creates the bounding box for the honeycomb holes.
     ///
     /// This is used to limit the area where hexagons are placed.
+    ///
+    /// # Returns
+    ///
+    /// A `ScadObject` representing the bounding box.
     #[inline]
     fn create_boundary(&self) -> ScadObject {
         modifier_3d(
@@ -83,6 +91,10 @@ impl Honeycomb {
     /// Creates a single hexagonal cylinder primitive.
     ///
     /// This primitive is then translated and unioned to form the full pattern.
+    ///
+    /// # Returns
+    ///
+    /// A `ScadObject` representing a single hexagonal cylinder.
     #[inline]
     fn create_hex_primitive(&self) -> ScadObject {
         let hex_d = self.d / (PI / 6.).cos();
@@ -128,15 +140,15 @@ impl Honeycomb {
         let mut result = Vec::<na::Vector3<f64>>::new();
 
         // send `left` up if the vesel is big enough
-        while left.y < y_lim[0] - 1e-10 {
-            left += v1;
+        if left.y < y_lim[0] {
+            left += v1 * ((y_lim[0] - left.y) / v1.y).ceil();
         }
 
         // add midpoints for each row
         while left.y <= y_lim[1] - 1e-10 {
             // send `left` right if it is out of the area
-            while left.x < x_lim[0] - 1e-10 {
-                left += v0;
+            if left.x < x_lim[0] {
+                left += v0 * ((x_lim[0] - left.x) / v0.x).ceil();
             }
             let mut p = left;
             // scan the midpoints in the row
@@ -150,7 +162,12 @@ impl Honeycomb {
         result
     }
 
-    /// Generates an OpenSCAD object representing the holes of the honeycomb pattern.
+    /// Generates an OpenSCAD object
+    /// representing the holes of the honeycomb pattern.
+    ///
+    /// # Returns
+    ///
+    /// A `ScadObject` representing the honeycomb holes.
     pub fn holes_as_primitve(&self) -> ScadObject {
         let boundary = self.create_boundary();
         let hex = self.create_hex_primitive();
