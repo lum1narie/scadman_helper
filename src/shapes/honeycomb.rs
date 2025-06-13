@@ -206,7 +206,7 @@ intersection() {
       translate([0, 0, -5.05])
         rotate(a = [0, 0, 30])
           cylinder(h = 5.15, d = 6.92820323, $fn = 6);
-    translate([-0, 13.85640646, 0])
+    translate([0, 13.85640646, 0])
       translate([0, 0, -5.05])
         rotate(a = [0, 0, 30])
           cylinder(h = 5.15, d = 6.92820323, $fn = 6);
