@@ -435,7 +435,7 @@ mod tests {
         let rotated_obj_x = apply_direction_rotation(dummy_object.clone(), na::vector![1., 0., 0.]);
         assert_eq!(
             rotated_obj_x.to_code(),
-            r"rotate(a = [-0, 90, 0])
+            r"rotate(a = [0, 90, 0])
   sphere(r = 1);
 "
         );
@@ -530,7 +530,7 @@ translate([0, 0, -0.025])
             hole_shifted.to_code(),
             r"/* Screw { diameter: 3.0, head_diameter: 6.0 }.to_body_hole(10, [10, 20, 30], [1, 0, 0], 0.3) */
 translate([10, 20, 30])
-  rotate(a = [-0, 90, 0])
+  rotate(a = [0, 90, 0])
     translate([0, 0, -0.025])
       cylinder(h = 10.025, d = 3.3, center = false, $fn = 64);
 "
@@ -590,7 +590,7 @@ rotate(a = [180, 0, 0])
             hole_shifted.to_code(),
             r"/* Screw { diameter: 3.0, head_diameter: 6.0 }.to_hole(10, 2, [10, 20, 30], [1, 0, 0], 0.3) */
 translate([10, 20, 30])
-  rotate(a = [-0, 90, 0])
+  rotate(a = [0, 90, 0])
     union() {
       translate([0, 0, -0.025])
         cylinder(h = 2.025, d = 5.49615242, center = false, $fn = 6);
@@ -663,7 +663,7 @@ translate([1, 2, 3])
             nut_void_shifted.to_code(),
             r"/* Nut { width_across_faces: 10.0, thickness: 5.0 }.to_void([10, 20, 30], [1, 0, 0], 0.3) */
 translate([10, 20, 30])
-  rotate(a = [-0, 90, 0])
+  rotate(a = [0, 90, 0])
     translate([0, 0, -0.025])
       cylinder(h = 5.325, d = 8.96025404, center = false, $fn = 6);
 "

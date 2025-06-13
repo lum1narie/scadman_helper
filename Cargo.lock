@@ -292,9 +292,9 @@ dependencies = [
 
 [[package]]
 name = "scadman"
-version = "0.1.0"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "89301a36c2ad0f4ef5d8d7e8e911794e12a876eff411465f7e5aa393e9a13eb2"
+checksum = "05da47dc3eb2488504f83be20f5fbc3bc39863c975a4092ed413aa61a3b6c02f"
 dependencies = [
  "ambassador",
  "derive_builder",
@@ -305,7 +305,7 @@ dependencies = [
 
 [[package]]
 name = "scadman_helper"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "approx",
  "float-cmp",
