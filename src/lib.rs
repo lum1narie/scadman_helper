@@ -17,7 +17,7 @@ mod test_utils;
 ///
 /// # Arguments
 ///
-/// * `r` - A reference to a nalgebra 3D rotation matrix ([`Rotation3<Unit>`]).
+/// * `r` - A reference to a nalgebra 3D rotation matrix ([`nalgebra::Rotation3<Unit>`]).
 ///
 /// # Returns
 ///
@@ -25,7 +25,7 @@ mod test_utils;
 ///
 /// # Details
 ///
-/// The function uses the [`nalgebra::euler_angles_ordered`] method
+/// The function uses the [`nalgebra::Rotation3<Unit>::euler_angles_ordered()`] method
 /// with the standard X, Y, Z axes order to extract the angles.
 /// The angles are returned in the order corresponding
 /// to rotations around the X, Y, and Z axes respectively.

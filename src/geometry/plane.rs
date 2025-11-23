@@ -117,7 +117,7 @@ impl Plane {
     ///
     /// # Returns
     ///
-    /// * [`Some(Self)`] - Containing the new `Plane`
+    /// * [`Some<Self>`] - Containing the new `Plane`
     ///   if the input vectors are valid.
     /// * [`None`] - If either `x_axis` or `y_axis` is a zero vector,
     ///   or if they are parallel
