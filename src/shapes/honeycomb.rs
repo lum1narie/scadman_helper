@@ -34,13 +34,13 @@ impl Honeycomb {
     /// # Arguments
     ///
     /// * `d` - The diameter of each hexagonal cell.
-    ///         (distance across parallel edges).
+    ///   distance across parallel edges).
     /// * `t` - The thickness of the walls between cells.
     /// * `width` - The overall width of the pattern.
     /// * `height` - The overall height of the pattern.
     /// * `depth` - The depth of the pattern.
     /// * `vesel` - The distance from the edge
-    ///             to the outermost edge of the hexagonal cells.
+    ///   the outermost edge of the hexagonal cells.
     ///
     /// # Returns
     ///
@@ -123,7 +123,7 @@ impl Honeycomb {
     /// # Arguments
     ///
     /// * `offset` - The 2D offset to apply to the starting point
-    ///              of the hexagon grid.
+    ///   of the hexagon grid.
     ///
     /// # Returns
     ///
@@ -230,7 +230,7 @@ impl Honeycomb {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_utils::{assert_approx_eq_float, assert_approx_eq_vec};
+    use crate::test_utils::assert_approx_eq_vec;
 
     // Helper function for comparing vectors of Point3D with a tolerance
     fn assert_vec_point3d_approx_eq(actual: &[Point3D], expected: &[Point3D], tolerance: Unit) {

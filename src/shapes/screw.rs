@@ -156,7 +156,7 @@ impl Screw {
     /// * `depth` - The depth of the screw body hole. Must be positive.
     /// * `position` - The position of the top of the screw body hole.
     /// * `direction` - The vector indicating the direction of the hole.
-    ///                 Must be non-zero.
+    ///   Must be non-zero.
     /// * `eps` - A small value added to the diameter for clearance.
     ///
     /// # Panics
@@ -209,9 +209,9 @@ impl Screw {
     /// * `head_depth` - The depth of the screw head hole. Must be positive.
     /// * `position` - The position of the top of the screw hole.
     /// * `direction` - The vector indicating the direction of the hole.
-    ///                 This vector should point
-    ///                 from the top of the screw hole towards the bottom.
-    ///                 Must be non-zero.
+    ///   This vector should point
+    ///   from the top of the screw hole towards the bottom.
+    ///   Must be non-zero.
     /// * `eps` - A small value added to the diameter for clearance.
     ///
     /// # Panics
@@ -323,8 +323,8 @@ impl Nut {
     ///
     /// * `position` - The position of the center of the nut void.
     /// * `direction` - The vector indicating the direction
-    ///                 of the nut's axis (perpendicular to the faces).
-    ///                 Must be non-zero.
+    ///   of the nut's axis (perpendicular to the faces).
+    ///   Must be non-zero.
     /// * `eps` - A small value added to the diameter for clearance.
     pub fn to_void(&self, position: Point3D, direction: Point3D, eps: Unit) -> ScadObject {
         assert!(
@@ -360,8 +360,8 @@ impl Nut {
     ///
     /// * `position` - The starting position of the slit.
     /// * `cut_until` - The ending position of the slit.
-    ///                 The slit will extend from `position` to `cut_until`.
-    ///                 Must be different from `position`.
+    ///   The slit will extend from `position` to `cut_until`.
+    ///   Must be different from `position`.
     /// * `eps` - A small value added to the diameter for clearance.
     ///
     /// # Panics

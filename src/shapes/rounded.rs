@@ -16,8 +16,8 @@ use scadman::prelude::*;
 ///
 /// * `size` - The total size of the cuboid including the rounded corners.
 /// * `radius` - The radius of the rounding spheres.
-///              Must be positive and less than or equal to
-///              half of the smallest dimension of `size`.
+///   Must be positive and less than or equal to
+///   half of the smallest dimension of `size`.
 ///
 /// # Returns
 ///

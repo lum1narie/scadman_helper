@@ -13,7 +13,7 @@ use scadman::prelude::*;
 ///
 /// * `object` - The [`ScadObject`] to be translated.
 /// * `points` - A slice of [`na::Vector3<Unit>`]
-///              representing the translation vectors.
+///   representing the translation vectors.
 ///
 /// # Returns
 ///
@@ -44,7 +44,7 @@ pub fn map_translate_3d(object: &ScadObject, points: &[na::Vector3<Unit>]) -> Ve
 ///
 /// * `object` - The [`ScadObject`] to be translated.
 /// * `points` - A slice of [`na::Vector2<Unit>`]
-///              representing the translation vectors.
+///   representing the translation vectors.
 ///
 /// # Returns
 ///

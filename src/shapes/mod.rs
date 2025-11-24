@@ -3,3 +3,4 @@
 pub mod honeycomb;
 pub mod rounded;
 pub mod screw;
+pub mod snapfit;
