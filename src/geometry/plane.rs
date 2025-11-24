@@ -111,9 +111,9 @@ impl Plane {
     ///
     /// * `origin` - The origin point of the plane.
     /// * `x_axis` - A vector defining the direction of the plane's X-axis.
-    ///    will be normalized.
+    ///   will be normalized.
     /// * `y_axis` - A vector defining the direction of the plane's Y-axis.
-    ///    will be orthogonalized respect to `x_axis` and then normalized.
+    ///   will be orthogonalized respect to `x_axis` and then normalized.
     ///
     /// # Returns
     ///
