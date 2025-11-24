@@ -3,7 +3,7 @@ name = "scadman_helper"
 description = "Helper library for scadman."
 license = "MIT"
 repository = "https://github.com/lum1narie/scadman_helper"
-version = "0.2.2"
+version = "0.2.3"
 edition = "2021"
 rust-version = "1.85"
 
