@@ -202,7 +202,7 @@ impl SnapFitInserter {
 
         let shape = modifier_3d(
             Translate3D::build_with(|tb| {
-                let _ = tb.v(Point3D::new(0., 0., -self.clearance / 2.));
+                let _ = tb.v(Point3D::new(0., 0., -self.clearance));
             }),
             modifier_3d(
                 LinearExtrude::build_with(|lb| {
@@ -373,7 +373,7 @@ impl SnapFitNail {
             let x_a3 = self.length + self.clearance;
             let x_a2i = x_a3 - self.notch_fillet_size;
             let y_a0 = 0.;
-            let y_a1 = self.thickness - self.clearance;
+            let y_a1 = self.thickness + self.clearance;
             let y_a2 = self.thickness + self.notch_fillet_size;
             let y_a3 = self.thickness + self.notch_depth + self.clearance;
             let y_a2i = y_a3 - self.notch_fillet_size;
@@ -432,27 +432,27 @@ mod tests {
 
     #[test]
     fn test_inserter_snapfit() {
-        let snap_ins = SnapFitInserter::try_new(2., 6., 2., 2., 10., 2., 2., 0.5, 0.5).unwrap();
+        let snap_ins = SnapFitInserter::try_new(1.8, 6., 2., 3., 10., 1.5, 1.8, 0.5, 0.3).unwrap();
         assert_eq!(
             snap_ins.snapfit_as_primitive().to_code(),
-            r"/* SnapFitInserter { snap_width: 2.0, width: 6.0, base_depth: 2.0, notch_depth: 2.0, depth: 10.0, notch_over_width: 2.0, thickness: 2.0, notch_fillet_size: 0.5, clearance: 0.5 }.snapfit_as_primitive() */
+            r"/* SnapFitInserter { snap_width: 1.8, width: 6.0, base_depth: 2.0, notch_depth: 3.0, depth: 10.0, notch_over_width: 1.5, thickness: 1.8, notch_fillet_size: 0.5, clearance: 0.3 }.snapfit_as_primitive() */
 mirror([0, 1, 0])
   rotate(a = [90, 0, 0])
-    linear_extrude(height = 2)
+    linear_extrude(height = 1.8)
       union() {
-        polygon(points = [[0, -0.05], [2, -0.05], [2, 10], [0, 10], [-1, 9], [0, 8]]);
+        polygon(points = [[0, -0.05], [1.8, -0.05], [1.8, 10], [0, 10], [-0.5, 9], [0, 7]]);
         /* outer_fillet(0.5) */
         offset(r = 0.5, $fn = 24)
           offset(r = -0.5, $fn = 24)
-            polygon(points = [[-2, 8], [2, 8], [0, 10]]);
+            polygon(points = [[-1.5, 7], [1.8, 7], [0, 10]]);
         translate([6, 0])
           mirror([1, 0])
             union() {
-              polygon(points = [[0, -0.05], [2, -0.05], [2, 10], [0, 10], [-1, 9], [0, 8]]);
+              polygon(points = [[0, -0.05], [1.8, -0.05], [1.8, 10], [0, 10], [-0.5, 9], [0, 7]]);
               /* outer_fillet(0.5) */
               offset(r = 0.5, $fn = 24)
                 offset(r = -0.5, $fn = 24)
-                  polygon(points = [[-2, 8], [2, 8], [0, 10]]);
+                  polygon(points = [[-1.5, 7], [1.8, 7], [0, 10]]);
             }
         /* square_from_to([0, -0.05], [6, 2]) */
         translate([0, -0.05])
@@ -462,17 +462,17 @@ mirror([0, 1, 0])
         );
         assert_eq!(
             snap_ins.hole_as_primitive().to_code(),
-            r"/* SnapFitInserter { snap_width: 2.0, width: 6.0, base_depth: 2.0, notch_depth: 2.0, depth: 10.0, notch_over_width: 2.0, thickness: 2.0, notch_fillet_size: 0.5, clearance: 0.5 }.hole_as_primitive() */
+            r"/* SnapFitInserter { snap_width: 1.8, width: 6.0, base_depth: 2.0, notch_depth: 3.0, depth: 10.0, notch_over_width: 1.5, thickness: 1.8, notch_fillet_size: 0.5, clearance: 0.3 }.hole_as_primitive() */
 rotate(a = [-90, 0, 0])
-  translate([0, 0, -0.25])
-    linear_extrude(height = 3)
+  translate([0, 0, -0.3])
+    linear_extrude(height = 2.4)
       union() {
-        /* square_from_to([-0.5, -0.05], [6.5, 10.5]) */
-        translate([-0.5, -0.05])
-          square(size = [7, 10.55], center = false);
-        /* square_from_to([-2.5, 8], [8.5, 10.5]) */
-        translate([-2.5, 8])
-          square(size = [11, 2.5], center = false);
+        /* square_from_to([-0.3, -0.05], [6.3, 10.3]) */
+        translate([-0.3, -0.05])
+          square(size = [6.6, 10.35], center = false);
+        /* square_from_to([-1.8, 7], [7.8, 10.3]) */
+        translate([-1.8, 7])
+          square(size = [9.6, 3.3], center = false);
       }
 "
         );
@@ -480,10 +480,10 @@ rotate(a = [-90, 0, 0])
 
     #[test]
     fn test_nail_snapfit() {
-        let snap_nail = SnapFitNail::try_new(10., 10., 3., 5., 3., 0.5, 0.5).unwrap();
+        let snap_nail = SnapFitNail::try_new(10., 10., 3., 5., 2., 0.5, 0.3).unwrap();
         assert_eq!(
             snap_nail.snapfit_as_primitive().to_code(),
-            r"/* SnapFitNail { width: 10.0, length: 10.0, thickness: 3.0, notch_length: 5.0, notch_depth: 3.0, notch_fillet_size: 0.5, clearance: 0.5 }.snapfit_as_primitive() */
+            r"/* SnapFitNail { width: 10.0, length: 10.0, thickness: 3.0, notch_length: 5.0, notch_depth: 2.0, notch_fillet_size: 0.5, clearance: 0.3 }.snapfit_as_primitive() */
 mirror([1, 0, 0])
   rotate(a = [0, -90, 0])
     linear_extrude(height = 10)
@@ -496,19 +496,19 @@ mirror([1, 0, 0])
             /* outer_fillet(0.5) */
             offset(r = 0.5, $fn = 24)
               offset(r = -0.5, $fn = 24)
-                polygon(points = [[-0.05, 0], [10, 0], [10, 3], [5, 6], [5, 3], [-0.05, 3]]);
+                polygon(points = [[-0.05, 0], [10, 0], [10, 3], [5, 5], [5, 3], [-0.05, 3]]);
       }
 "
         );
         assert_eq!(
             snap_nail.hole_as_primitive().to_code(),
-            r"/* SnapFitNail { width: 10.0, length: 10.0, thickness: 3.0, notch_length: 5.0, notch_depth: 3.0, notch_fillet_size: 0.5, clearance: 0.5 }.hole_as_primitive() */
+            r"/* SnapFitNail { width: 10.0, length: 10.0, thickness: 3.0, notch_length: 5.0, notch_depth: 2.0, notch_fillet_size: 0.5, clearance: 0.3 }.hole_as_primitive() */
 rotate(a = [0, 90, 0])
-  translate([0, 0, -0.25])
-    linear_extrude(height = 10.5)
+  translate([0, 0, -0.15])
+    linear_extrude(height = 10.3)
       union() {
-        polygon(points = [[-0.05, 0], [10.5, 0], [10.5, 6], [10, 6.5], [4.5, 6.5], [4.5, 3.5], [4, 2.5], [-0.05, 2.5]]);
-        translate([10, 6])
+        polygon(points = [[-0.05, 0], [10.3, 0], [10.3, 4.8], [9.8, 5.3], [4.7, 5.3], [4.7, 3.5], [4.2, 3.3], [-0.05, 3.3]]);
+        translate([9.8, 4.8])
           circle(r = 0.5);
       }
 "
