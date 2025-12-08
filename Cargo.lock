@@ -427,7 +427,7 @@ dependencies = [
 
 [[package]]
 name = "scadman_helper"
-version = "0.2.4"
+version = "0.3.0"
 dependencies = [
  "approx",
  "float-cmp",
