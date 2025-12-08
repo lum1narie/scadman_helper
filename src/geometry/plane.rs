@@ -146,9 +146,9 @@ impl Plane {
     ///
     /// # Returns
     ///
-    /// Returns a `ScadObject` representing the input `target` object
+    /// Returns a `ScadObject3D` representing the input `target` object
     /// transformed by the plane's translation and rotation.
-    pub fn as_modifier(&self, target: ScadObject) -> ScadObject {
+    pub fn as_modifier(&self, target: ScadObject3D) -> ScadObject3D {
         let (rot_x, rot_y, rot_z) = {
             // Calculate the Z axis as the cross product of X and Y
             let z_axis = self.x_axis.cross(&self.y_axis);
@@ -159,30 +159,28 @@ impl Plane {
         };
 
         // Apply rotation first, then translation
-        modifier_3d_commented(
-            Translate3D::build_with(|tb| {
-                let _ = tb.v(self.origin);
-            }),
-            modifier_3d(
-                Rotate3D::build_with(|rb| {
-                    // Convert radians to degrees for OpenSCAD
-                    let _ = rb.rad([rot_x, rot_y, rot_z]);
-                }),
-                target,
-            ),
-            &format!(
-                "as plane o:[{}, {}, {}], x:[{}, {}, {}], y: [{}, {}, {}]",
-                self.origin.x,
-                self.origin.y,
-                self.origin.z,
-                self.x_axis.x,
-                self.x_axis.y,
-                self.x_axis.z,
-                self.y_axis.x,
-                self.y_axis.y,
-                self.y_axis.z,
-            ),
+        Translate3D::build_with(|tb| {
+            let _ = tb.v(self.origin);
+        })
+        .apply_to(
+            Rotate3D::build_with(|rb| {
+                // Convert radians to degrees for OpenSCAD
+                let _ = rb.rad([rot_x, rot_y, rot_z]);
+            })
+            .apply_to(target),
         )
+        .commented(&format!(
+            "as plane o:[{}, {}, {}], x:[{}, {}, {}], y: [{}, {}, {}]",
+            self.origin.x,
+            self.origin.y,
+            self.origin.z,
+            self.x_axis.x,
+            self.x_axis.y,
+            self.x_axis.z,
+            self.y_axis.x,
+            self.y_axis.y,
+            self.y_axis.z,
+        ))
     }
 }
 
@@ -194,7 +192,6 @@ mod tests {
 
     use super::*;
     use nalgebra as na;
-    use scadman::scad_sentence::Rotate3DAngle;
 
     const TOLERANCE: f64 = 1e-3; // Use a slightly larger tolerance for comparisons
 
@@ -389,89 +386,45 @@ mod tests {
         let y_axis = na::vector![2., 2., 0.]; // Parallel to x_axis
         assert!(Plane::try_new(origin, x_axis, y_axis).is_none());
     }
-
-    /// Asserts that a `ScadObject` is a Translate modifier wrapping a Rotate modifier,
-    /// and checks their translation vector and rotation angles.
-    ///
-    /// # Arguments
-    ///
-    /// * `modified_object` - The `ScadObject` to check.
-    /// * `expected_translation` - The expected translation vector.
-    /// * `expected_rotation_deg` - The expected rotation angles in degrees (XYZ).
-    fn assert_plane_modifier_transform(
-        modified_object: ScadObject,
-        expected_translation: na::Vector3<f64>,
-        expected_rotation_deg: na::Vector3<f64>,
-    ) {
-        let ScadObjectBody::Object3D(outer_3d) = modified_object.body else {
-            panic!("Expected modified_object.body to be ScadObjectBody::Object3D");
-        };
-        let ScadObject3D::Modifier(outer_modi) = outer_3d else {
-            panic!("Expected outer_3d to be ScadObject3D::Modifier");
-        };
-        let ScadModifierBody3D::Translate(outer_trans) = outer_modi.body else {
-            panic!("Expected outer_modi.body to be ScadModifierBody3D::Translate");
-        };
-        assert_approx_eq_vec(outer_trans.v, expected_translation, TOLERANCE);
-
-        let ScadObjectBody::Object3D(inner_3d) = outer_modi.child.body.clone() else {
-            panic!("Expected outer_modi.child.body to be ScadObjectBody::Object3D");
-        };
-        let ScadObject3D::Modifier(inner_modi) = inner_3d else {
-            panic!("Expected inner_3d to be ScadObject3D::Modifier");
-        };
-        let ScadModifierBody3D::Rotate(inner_rot) = inner_modi.body else {
-            panic!("Expected inner_modi.body to be ScadModifierBody3D::Rotate");
-        };
-        let Rotate3DAngle::V(inner_angle) = inner_rot.a else {
-            panic!("Expected inner_rot.a to be Rotate3DAngle::V");
-        };
-        assert_approx_eq_vec(
-            na::vector![
-                inner_angle.x.deg(),
-                inner_angle.y.deg(),
-                inner_angle.z.deg()
-            ],
-            expected_rotation_deg,
-            TOLERANCE,
-        );
-    }
-
+    //
     #[test]
     fn test_plane_as_modifier() {
-        let origin = na::vector![10., 20., 30.];
-        let x_axis = na::vector![0., 0., 1.];
-        let y_axis = na::vector![0., 1., 0.];
-        let plane = Plane::try_new(origin, x_axis, y_axis).unwrap();
-
-        let target_object = primitive_3d(Sphere::build_with(|sb| {
+        let target_object = Sphere::build_with(|sb| {
             let _ = sb.r(2.);
-        }));
+        });
 
-        let modified_object = plane.as_modifier(target_object.clone());
-        let expected_translation = origin;
-        let expected_rotation_deg = na::vector![0., -90., 0.];
+        {
+            let origin = na::vector![10., 20., 30.];
+            let x_axis = na::vector![0., 0., 1.];
+            let y_axis = na::vector![0., 1., 0.];
+            let plane = Plane::try_new(origin, x_axis, y_axis).unwrap();
 
-        assert_plane_modifier_transform(
-            modified_object,
-            expected_translation,
-            expected_rotation_deg,
-        );
+            let modified_object = plane.as_modifier(target_object.clone());
+            assert_eq!(
+                modified_object.to_code(),
+                r"/* as plane o:[10, 20, 30], x:[0, 0, 1], y: [0, 1, 0] */
+translate([10, 20, 30])
+  rotate(a = [0, -89.99999915, 0])
+    sphere(r = 2);
+"
+            );
+        }
 
-        let origin = na::vector![5., -3., 12.];
-        let x_axis = na::vector![0.43152905, 0.89608213, 0.10401677];
-        let y_axis = na::vector![-0.17069653, 0.19433216, -0.96596983];
-        let plane = Plane::try_new(origin, x_axis, y_axis).unwrap();
+        {
+            let origin = na::vector![5., -3., 12.];
+            let x_axis = na::vector![0.43152905, 0.89608213, 0.10401677];
+            let y_axis = na::vector![-0.17069653, 0.19433216, -0.96596983];
+            let plane = Plane::try_new(origin, x_axis, y_axis).unwrap();
 
-        let modified_object = plane.as_modifier(target_object);
-        let expected_translation = origin;
-        let expected_rotation_deg =
-            na::vector![-76.22499995511909, -5.970521460654896, 64.28578488323141];
-
-        assert_plane_modifier_transform(
-            modified_object,
-            expected_translation,
-            expected_rotation_deg,
-        );
+            let modified_object = plane.as_modifier(target_object);
+            assert_eq!(
+                modified_object.to_code(),
+                r"/* as plane o:[5, -3, 12], x:[0.4315290514800427, 0.89608213307335, 0.10401677035675296], y: [-0.17069653067490384, 0.19433215688782346, -0.9659698272797542] */
+translate([5, -3, 12])
+  rotate(a = [-76.22499996, -5.97052146, 64.28578488])
+    sphere(r = 2);
+"
+            );
+        }
     }
 }

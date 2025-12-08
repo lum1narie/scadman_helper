@@ -27,7 +27,7 @@ use scadman::prelude::*;
 ///
 /// Panics if `radius` is not positive
 /// or if any dimension of `size` is less than `radius * 2.`.
-pub fn rounded_cuboid(size: Point3D, radius: Unit) -> ScadObject {
+pub fn rounded_cuboid(size: Point3D, radius: Unit) -> ScadObject3D {
     assert!(radius > 0.);
     assert!(size.x >= radius * 2.);
     assert!(size.y >= radius * 2.);
@@ -38,27 +38,23 @@ pub fn rounded_cuboid(size: Point3D, radius: Unit) -> ScadObject {
 
     let positions_iter = iproduct!(&xs, &ys, &zs).map(|(&x, &y, &z)| [x, y, z]);
 
-    modifier_3d_commented(
-        Hull::new(),
-        block_3d(
-            &positions_iter
+    Hull::new()
+        .apply_to_3d(
+            positions_iter
                 .map(|v| {
-                    modifier_3d(
-                        Translate3D::build_with(|tb| {
-                            let _ = tb.v(v);
-                        }),
-                        primitive_3d(Sphere::build_with(|sb| {
-                            let _ = sb.r(radius).r#fn(64_u64);
-                        })),
-                    )
+                    Translate3D::build_with(|tb| {
+                        let _ = tb.v(v);
+                    })
+                    .apply_to(Sphere::build_with(|sb| {
+                        let _ = sb.r(radius).r#fn(64_u64);
+                    }))
                 })
                 .collect::<Vec<_>>(),
-        ),
-        &format!(
+        )
+        .commented(&format!(
             "rounded_cuboid([{}, {}, {}], {radius})",
             size.x, size.y, size.z
-        ),
-    )
+        ))
 }
 
 #[cfg(test)]

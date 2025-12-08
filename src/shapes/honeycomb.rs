@@ -71,21 +71,18 @@ impl Honeycomb {
     ///
     /// A `ScadObject` representing the bounding box.
     #[inline]
-    fn create_boundary(&self) -> ScadObject {
-        modifier_3d(
-            Translate3D::build_with(|tb| {
-                let _ = tb
-                    .v(Point3D::new(0., 0., -self.depth)
-                        + Point3D::new(self.vesel, self.vesel, 0.));
-            }),
-            primitive_3d(Cube::build_with(|cb| {
-                let _ = cb.size(
-                    Point3D::new(self.width, self.height, self.depth)
-                        - 2. * Point3D::new(self.vesel, self.vesel, 0.)
-                        + Point3D::new(0., 0., OVERLAP_SMALL),
-                );
-            })),
-        )
+    fn create_boundary(&self) -> ScadObject3D {
+        Translate3D::build_with(|tb| {
+            let _ =
+                tb.v(Point3D::new(0., 0., -self.depth) + Point3D::new(self.vesel, self.vesel, 0.));
+        })
+        .apply_to(Cube::build_with(|cb| {
+            let _ = cb.size(
+                Point3D::new(self.width, self.height, self.depth)
+                    - 2. * Point3D::new(self.vesel, self.vesel, 0.)
+                    + Point3D::new(0., 0., OVERLAP_SMALL),
+            );
+        }))
     }
 
     /// Creates a single hexagonal cylinder primitive.
@@ -96,24 +93,21 @@ impl Honeycomb {
     ///
     /// A `ScadObject` representing a single hexagonal cylinder.
     #[inline]
-    fn create_hex_primitive(&self) -> ScadObject {
+    fn create_hex_primitive(&self) -> ScadObject3D {
         let hex_d = self.d / (PI / 6.).cos();
-        modifier_3d(
-            Translate3D::build_with(|tb| {
-                let _ =
-                    tb.v(Point3D::new(0., 0., -self.depth) + Point3D::new(0., 0., -OVERLAP_SMALL));
-            }),
-            modifier_3d(
-                Rotate3D::build_with(|rb| {
-                    let _ = rb.deg([0., 0., 30.]);
-                }),
-                primitive_3d(Cylinder::build_with(|cb| {
-                    let _ = cb
-                        .d(hex_d)
-                        .h(3.0_f64.mul_add(OVERLAP_SMALL, self.depth))
-                        .r#fn(6_u64);
-                })),
-            ),
+        Translate3D::build_with(|tb| {
+            let _ = tb.v(Point3D::new(0., 0., -self.depth) + Point3D::new(0., 0., -OVERLAP_SMALL));
+        })
+        .apply_to(
+            Rotate3D::build_with(|rb| {
+                let _ = rb.deg([0., 0., 30.]);
+            })
+            .apply_to(Cylinder::build_with(|cb| {
+                let _ = cb
+                    .d(hex_d)
+                    .h(3.0_f64.mul_add(OVERLAP_SMALL, self.depth))
+                    .r#fn(6_u64);
+            })),
         )
     }
 
@@ -188,13 +182,13 @@ impl Honeycomb {
     /// # Returns
     ///
     /// A `ScadObject` representing the honeycomb holes.
-    pub fn holes_as_primitve(&self) -> ScadObject {
+    pub fn holes_as_primitve(&self) -> ScadObject3D {
         let boundary = self.create_boundary();
         let hex = self.create_hex_primitive();
         let hex_mid_points = self.calculate_hex_mid_points(Point2D::zeros());
-        let hexes = map_translate_3d(&hex, &hex_mid_points);
+        let hexes = map_translate_3d(hex, &hex_mid_points);
 
-        (boundary * modifier_3d(Union::new(), block_3d(&hexes)))
+        (boundary * Union::new().apply_to_3d(hexes))
             .commented(&format!("{self:?}.holes_as_primitve()"))
     }
 
@@ -214,13 +208,13 @@ impl Honeycomb {
     /// # Returns
     ///
     /// A `ScadObject` representing the honeycomb holes.
-    pub fn holes_as_primitve_with_offset(&self, offset: Point2D) -> ScadObject {
+    pub fn holes_as_primitve_with_offset(&self, offset: Point2D) -> ScadObject3D {
         let boundary = self.create_boundary();
         let hex = self.create_hex_primitive();
         let hex_mid_points = self.calculate_hex_mid_points(offset);
-        let hexes = map_translate_3d(&hex, &hex_mid_points);
+        let hexes = map_translate_3d(hex, &hex_mid_points);
 
-        (boundary * modifier_3d(Union::new(), block_3d(&hexes))).commented(&format!(
+        (boundary * Union::new().apply_to_3d(hexes)).commented(&format!(
             "{self:?}.holes_as_primitve_with_offset([{}, {}])",
             offset.x, offset.y
         ))

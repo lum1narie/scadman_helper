@@ -19,23 +19,22 @@ use scadman::prelude::*;
 /// # Returns
 ///
 /// A `ScadObject` representing the generated cuboid.
-pub fn cuboid_from_to(p0: Point3D, p1: Point3D) -> ScadObject {
+pub fn cuboid_from_to(p0: Point3D, p1: Point3D) -> ScadObject3D {
     let from = Point3D::new(p0.x.min(p1.x), p0.y.min(p1.y), p0.z.min(p1.z));
     let to = Point3D::new(p0.x.max(p1.x), p0.y.max(p1.y), p0.z.max(p1.z));
 
-    let c = primitive_3d(Cube::build_with(|cb| {
+    let c = Cube::build_with(|cb| {
         let _ = cb.size(to - from).center(false);
-    }));
-    let var_name = abs_diff_eq!(from.norm(), 0.);
-    if var_name {
+    });
+    let norm = abs_diff_eq!(from.norm(), 0.);
+
+    if norm {
         c
     } else {
-        modifier_3d(
-            Translate3D::build_with(|tb| {
-                let _ = tb.v(from);
-            }),
-            c,
-        )
+        Translate3D::build_with(|tb| {
+            let _ = tb.v(from);
+        })
+        .apply_to(c)
     }
     .commented(&format!(
         "cuboid_from_to([{}, {}, {}], [{}, {}, {}])",
@@ -56,23 +55,22 @@ pub fn cuboid_from_to(p0: Point3D, p1: Point3D) -> ScadObject {
 /// # Returns
 ///
 /// A `ScadObject` representing the generated square.
-pub fn square_from_to(p0: Point2D, p1: Point2D) -> ScadObject {
+pub fn square_from_to(p0: Point2D, p1: Point2D) -> ScadObject2D {
     let from = Point2D::new(p0.x.min(p1.x), p0.y.min(p1.y));
     let to = Point2D::new(p0.x.max(p1.x), p0.y.max(p1.y));
 
-    let c = primitive_2d(Square::build_with(|sb| {
+    let c = Square::build_with(|sb| {
         let _ = sb.size(to - from).center(false);
-    }));
-    let var_name = abs_diff_eq!(from.norm(), 0.);
-    if var_name {
+    });
+    let norm = abs_diff_eq!(from.norm(), 0.);
+
+    if norm {
         c
     } else {
-        modifier_2d(
-            Translate2D::build_with(|tb| {
-                let _ = tb.v(from);
-            }),
-            c,
-        )
+        Translate2D::build_with(|tb| {
+            let _ = tb.v(from);
+        })
+        .apply_to(c)
     }
     .commented(&format!(
         "square_from_to([{}, {}], [{}, {}])",
