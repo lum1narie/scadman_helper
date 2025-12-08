@@ -13,7 +13,7 @@ const SMALL_OVERLAP: f64 = 0.025;
 
 /// Applies rotation to a [`ScadObject`] based on a direction vector.
 /// The object is assumed to be initially aligned with the Z-axis.
-fn apply_direction_rotation(object: ScadObject, direction: Point3D) -> ScadObject {
+fn apply_direction_rotation(object: ScadObject3D, direction: Point3D) -> ScadObject3D {
     let z_vec = na::Vector3::<f64>::z();
     let dir_norm = direction.normalize();
     let angle = z_vec.angle(&dir_norm);
@@ -21,49 +21,42 @@ fn apply_direction_rotation(object: ScadObject, direction: Point3D) -> ScadObjec
     if approx_eq!(Unit, angle, 0.) {
         object
     } else if approx_eq!(Unit, angle, PI) {
-        modifier_3d(
-            Rotate3D::build_with(|rb| {
-                let _ = rb.deg([180., 0., 0.]);
-            }),
-            object,
-        )
+        Rotate3D::build_with(|rb| {
+            let _ = rb.deg([180., 0., 0.]);
+        })
+        .apply_to(object)
     } else {
         let (rx, ry, rz) =
             to_openscad_rotate_angles(&na::Rotation3::rotation_between(&z_vec, &dir_norm).unwrap());
-        modifier_3d(
-            Rotate3D::build_with(|rb| {
-                let _ = rb.rad([rx, ry, rz]);
-            }),
-            object,
-        )
+
+        Rotate3D::build_with(|rb| {
+            let _ = rb.rad([rx, ry, rz]);
+        })
+        .apply_to(object)
     }
 }
 
 /// Applies rotation to a [`ScadObject`] based on a cut vector for a side slit.
 /// The object is assumed to be initially aligned with the X-axis.
-fn apply_slit_rotation(object: ScadObject, cut_vector: Point3D) -> ScadObject {
+fn apply_slit_rotation(object: ScadObject3D, cut_vector: Point3D) -> ScadObject3D {
     let hole_v = Point3D::x() * cut_vector.norm();
     let angle = cut_vector.angle(&hole_v);
 
     if approx_eq!(Unit, angle, 0.) {
         object
     } else if approx_eq!(Unit, angle, PI) {
-        modifier_3d(
-            Rotate3D::build_with(|rb| {
-                let _ = rb.deg([0., 0., 180.]);
-            }),
-            object,
-        )
+        Rotate3D::build_with(|rb| {
+            let _ = rb.deg([0., 0., 180.]);
+        })
+        .apply_to(object)
     } else {
         let (rx, ry, rz) = to_openscad_rotate_angles(
             &na::Rotation3::rotation_between(&hole_v, &cut_vector).unwrap(),
         );
-        modifier_3d(
-            Rotate3D::build_with(|rb| {
-                let _ = rb.rad([rx, ry, rz]);
-            }),
-            object,
-        )
+        Rotate3D::build_with(|rb| {
+            let _ = rb.rad([rx, ry, rz]);
+        })
+        .apply_to(object)
     }
 }
 
@@ -92,58 +85,55 @@ impl Screw {
 
     /// Creates the basic cylinder for the screw body hole,
     /// including EPS and overlap.
-    fn create_body_hole_cylinder(&self, depth: Unit, eps: Unit) -> ScadObject {
-        let c = primitive_3d(Cylinder::build_with(|cb| {
+    fn create_body_hole_cylinder(&self, depth: Unit, eps: Unit) -> ScadObject3D {
+        let c = Cylinder::build_with(|cb| {
             let _ = cb
                 .h(depth + SMALL_OVERLAP)
                 .d(self.diameter + eps)
                 .center(false)
                 .r#fn(64_u64);
-        }));
-        modifier_3d(
-            Translate3D::build_with(|tb| {
-                let _ = tb.v([0., 0., -SMALL_OVERLAP]);
-            }),
-            c,
-        )
+        });
+
+        Translate3D::build_with(|tb| {
+            let _ = tb.v([0., 0., -SMALL_OVERLAP]);
+        })
+        .apply_to(c)
     }
 
     /// Creates the basic hexagonal cylinder for the screw head hole,
     /// including EPS and overlap.
-    fn create_head_hole_cylinder(&self, head_depth: Unit, eps: Unit) -> ScadObject {
-        let c = primitive_3d(Cylinder::build_with(|cb| {
+    fn create_head_hole_cylinder(&self, head_depth: Unit, eps: Unit) -> ScadObject3D {
+        let c = Cylinder::build_with(|cb| {
             let _ = cb
                 .h(head_depth + SMALL_OVERLAP)
                 .d(self.head_diameter.mul_add((PI / 6.).cos(), eps))
                 .center(false)
                 .r#fn(6_u64);
-        }));
-        modifier_3d(
-            Translate3D::build_with(|tb| {
-                let _ = tb.v([0., 0., -SMALL_OVERLAP]);
-            }),
-            c,
-        )
+        });
+
+        Translate3D::build_with(|tb| {
+            let _ = tb.v([0., 0., -SMALL_OVERLAP]);
+        })
+        .apply_to(c)
     }
 
     /// Creates the body cylinder for the complete screw hole,
     /// including overlap and translation relative to head.
-    fn create_hole_body_cylinder(&self, depth: Unit, head_depth: Unit) -> ScadObject {
-        let c = primitive_3d(Cylinder::build_with(|cb| {
+    fn create_hole_body_cylinder(&self, depth: Unit, head_depth: Unit) -> ScadObject3D {
+        let c = Cylinder::build_with(|cb| {
             let _ = cb
                 .h(depth + SMALL_OVERLAP)
                 // No EPS here
                 .d(self.diameter)
                 .center(false)
                 .r#fn(64_u64);
-        }));
-        modifier_3d(
-            Translate3D::build_with(|tb| {
-                // Translate relative to head
-                let _ = tb.v([0., 0., head_depth - SMALL_OVERLAP]);
-            }),
-            c,
-        )
+        });
+
+        Translate3D::build_with(|tb| {
+            // Translate relative to head
+            let _ = tb.v([0., 0., head_depth - SMALL_OVERLAP]);
+        })
+        .apply_to(c)
     }
 
     /// Generates an OpenSCAD object representing a hole for the screw body.
@@ -171,7 +161,7 @@ impl Screw {
         position: Point3D,
         direction: Point3D,
         eps: Unit,
-    ) -> ScadObject {
+    ) -> ScadObject3D {
         assert!(depth > 0., "depth must be positive");
         assert!(
             direction != Point3D::zeros(),
@@ -179,17 +169,15 @@ impl Screw {
         );
 
         let hole = self.create_body_hole_cylinder(depth, eps);
-        let rot = apply_direction_rotation(hole, direction);
+        let rot_hole = apply_direction_rotation(hole, direction);
 
         if approx_eq!(Unit, position.norm(), 0.) {
-            rot
+            rot_hole
         } else {
-            modifier_3d(
-                Translate3D::build_with(|tb| {
-                    let _ = tb.v(position);
-                }),
-                rot,
-            )
+            Translate3D::build_with(|tb| {
+                let _ = tb.v(position);
+            })
+            .apply_to(rot_hole)
         }
         .commented(&format!(
             "{self:?}.to_body_hole({depth}, [{}, {}, {}], [{}, {}, {}], {eps})",
@@ -228,7 +216,7 @@ impl Screw {
         position: Point3D,
         direction: Point3D,
         eps: Unit,
-    ) -> ScadObject {
+    ) -> ScadObject3D {
         assert!(depth > 0., "depth must be positive");
         assert!(head_depth > 0., "head_depth must be positive");
         assert!(
@@ -240,17 +228,15 @@ impl Screw {
         let body = self.create_hole_body_cylinder(depth, head_depth);
 
         let combined_hole = head + body;
-        let rot = apply_direction_rotation(combined_hole, direction);
+        let rot_hole = apply_direction_rotation(combined_hole, direction);
 
         if approx_eq!(Unit, position.norm(), 0.) {
-            rot
+            rot_hole
         } else {
-            modifier_3d(
-                Translate3D::build_with(|tb| {
-                    let _ = tb.v(position);
-                }),
-                rot,
-            )
+            Translate3D::build_with(|tb| {
+                let _ = tb.v(position);
+            })
+            .apply_to(rot_hole)
         }
         .commented(&format!(
             "{self:?}.to_hole({depth}, {head_depth}, [{}, {}, {}], [{}, {}, {}], {eps})",
@@ -285,33 +271,32 @@ impl Nut {
 
     /// Creates the basic hexagonal cylinder for the nut void,
     /// including EPS and overlap.
-    fn create_nut_void_cylinder(&self, thickness: Unit, eps: Unit) -> ScadObject {
-        let c = primitive_3d(Cylinder::build_with(|cb| {
+    fn create_nut_void_cylinder(&self, thickness: Unit, eps: Unit) -> ScadObject3D {
+        let c = Cylinder::build_with(|cb| {
             let _ = cb
                 .h(thickness + SMALL_OVERLAP + eps)
                 .d(self.width_across_faces.mul_add((PI / 6.).cos(), eps))
                 .center(false)
                 .r#fn(6_u64);
-        }));
-        modifier_3d(
-            Translate3D::build_with(|tb| {
-                let _ = tb.v([0., 0., -SMALL_OVERLAP]);
-            }),
-            c,
-        )
+        });
+
+        Translate3D::build_with(|tb| {
+            let _ = tb.v([0., 0., -SMALL_OVERLAP]);
+        })
+        .apply_to(c)
     }
 
     /// Creates the basic hexagonal cylinder for the nut side slit,
     /// including EPS and overlap, centered.
-    fn create_slit_nut_cylinder(&self, eps: Unit) -> ScadObject {
-        primitive_3d(Cylinder::build_with(|cb| {
+    fn create_slit_nut_cylinder(&self, eps: Unit) -> ScadObject3D {
+        Cylinder::build_with(|cb| {
             let _ = cb
                 .h(self.thickness + SMALL_OVERLAP + eps)
                 .d(self.width_across_faces.mul_add((PI / 6.).cos(), eps))
                 // Center is true for the slit hulling
                 .center(true)
                 .r#fn(6_u64);
-        }))
+        })
     }
 
     /// Generates an OpenSCAD object representing
@@ -326,23 +311,21 @@ impl Nut {
     ///   of the nut's axis (perpendicular to the faces).
     ///   Must be non-zero.
     /// * `eps` - A small value added to the diameter for clearance.
-    pub fn to_void(&self, position: Point3D, direction: Point3D, eps: Unit) -> ScadObject {
+    pub fn to_void(&self, position: Point3D, direction: Point3D, eps: Unit) -> ScadObject3D {
         assert!(
             direction != Point3D::zeros(),
             "direction must be non-zero vector"
         );
         let hole = self.create_nut_void_cylinder(self.thickness, eps);
-        let rot = apply_direction_rotation(hole, direction);
+        let rot_hole = apply_direction_rotation(hole, direction);
 
         if approx_eq!(Unit, position.norm(), 0.) {
-            rot
+            rot_hole
         } else {
-            modifier_3d(
-                Translate3D::build_with(|tb| {
-                    let _ = tb.v(position);
-                }),
-                rot,
-            )
+            Translate3D::build_with(|tb| {
+                let _ = tb.v(position);
+            })
+            .apply_to(rot_hole)
         }
         .commented(&format!(
             "{self:?}.to_void([{}, {}, {}], [{}, {}, {}], {eps})",
@@ -367,7 +350,7 @@ impl Nut {
     /// # Panics
     ///
     /// This function will panic if `position` and `cut_until` are the same.
-    pub fn to_side_slit(&self, position: Point3D, cut_until: Point3D, eps: Unit) -> ScadObject {
+    pub fn to_side_slit(&self, position: Point3D, cut_until: Point3D, eps: Unit) -> ScadObject3D {
         assert!(
             cut_until != position,
             "`position` and `cut_until` must be different"
@@ -379,25 +362,21 @@ impl Nut {
         let basic_nut_cylinder = self.create_slit_nut_cylinder(eps);
 
         let c0 = basic_nut_cylinder.clone();
-        let c1 = modifier_3d(
-            Translate3D::build_with(|tb| {
-                let _ = tb.v(hole_v);
-            }),
-            basic_nut_cylinder,
-        );
-        let hole = modifier_3d(Hull::new(), block_3d(&[c0, c1]));
+        let c1 = Translate3D::build_with(|tb| {
+            let _ = tb.v(hole_v);
+        })
+        .apply_to(basic_nut_cylinder);
+        let hole = Hull::new().apply_to_3d([c0, c1]);
 
-        let rot = apply_slit_rotation(hole, cut_v);
+        let rot_hole = apply_slit_rotation(hole, cut_v);
 
         if approx_eq!(Unit, position.norm(), 0.) {
-            rot
+            rot_hole
         } else {
-            modifier_3d(
-                Translate3D::build_with(|tb| {
-                    let _ = tb.v(position);
-                }),
-                rot,
-            )
+            Translate3D::build_with(|tb| {
+                let _ = tb.v(position);
+            })
+            .apply_to(rot_hole)
         }
         .commented(&format!(
             "{self:?}.to_void([{}, {}, {}], [{}, {}, {}], {eps})",
@@ -413,9 +392,9 @@ mod tests {
 
     #[test]
     fn test_apply_direction_rotation() {
-        let dummy_object = primitive_3d(Sphere::build_with(|sb| {
+        let dummy_object = Sphere::build_with(|sb| {
             let _ = sb.r(1.0);
-        }));
+        });
 
         // Test no rotation (direction [0, 0, 1])
         let rotated_obj_z = apply_direction_rotation(dummy_object.clone(), na::vector![0., 0., 1.]);
@@ -460,9 +439,9 @@ mod tests {
 
     #[test]
     fn test_apply_slit_rotation() {
-        let dummy_object = primitive_3d(Cube::build_with(|cb| {
+        let dummy_object = Cube::build_with(|cb| {
             let _ = cb.size([1., 1., 1.]);
-        }));
+        });
 
         // Test no rotation (cut_vector [1, 0, 0])
         let rotated_obj_x = apply_slit_rotation(dummy_object.clone(), na::vector![1., 0., 0.]);

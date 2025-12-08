@@ -98,8 +98,8 @@ impl SnapFitInserter {
     /// Produce the SCAD primitive for the snap-fit.
     ///
     /// Returns:
-    /// * `ScadObject` representing the solid inserter shape.
-    pub fn snapfit_as_primitive(&self) -> ScadObject {
+    /// * `ScadObject3D` representing the solid inserter shape.
+    pub fn snapfit_as_primitive(&self) -> ScadObject3D {
         let shape_2d = {
             let left = {
                 let x_a0 = -self.notch_over_width;
@@ -126,29 +126,27 @@ impl SnapFitInserter {
                     Point2D::new(x_a1, y_a2),
                 ];
 
-                let base = primitive_2d(Polygon::build_with(|pb| {
+                let base = Polygon::build_with(|pb| {
                     let _ = pb.points(base_p);
-                }));
+                });
 
                 let round = outer_fillet(
-                    &primitive_2d(Polygon::build_with(|pb| {
+                    Polygon::build_with(|pb| {
                         let _ = pb.points(round_p);
-                    })),
+                    }),
                     self.notch_fillet_size,
                 );
                 base + round
             };
 
-            let right = modifier_2d(
-                Translate2D::build_with(|tb| {
-                    let _ = tb.v(Point2D::new(self.width, 0.));
-                }),
-                modifier_2d(
-                    Mirror2D::build_with(|mb| {
-                        let _ = mb.v(Point2D::x());
-                    }),
-                    left.clone(),
-                ),
+            let right = Translate2D::build_with(|tb| {
+                let _ = tb.v(Point2D::new(self.width, 0.));
+            })
+            .apply_to(
+                Mirror2D::build_with(|mb| {
+                    let _ = mb.v(Point2D::x());
+                })
+                .apply_to(left.clone()),
             );
             let base = square_from_to(
                 Point2D::new(0., 0.) - Point2D::new(0., SMALL_OVERLAP),
@@ -158,32 +156,28 @@ impl SnapFitInserter {
             left + right + base
         };
 
-        let shape = modifier_3d(
-            LinearExtrude::build_with(|lb| {
-                let _ = lb.height(self.thickness);
-            }),
-            shape_2d,
-        );
+        let shape = LinearExtrude::build_with(|lb| {
+            let _ = lb.height(self.thickness);
+        })
+        .apply_to(shape_2d);
 
-        modifier_3d_commented(
-            Mirror3D::build_with(|mb| {
-                let _ = mb.v(Point3D::y());
-            }),
-            modifier_3d(
-                Rotate3D::build_with(|rb| {
-                    let _ = rb.deg([90., 0., 0.]);
-                }),
-                shape,
-            ),
-            &format!("{self:?}.snapfit_as_primitive()"),
+        Mirror3D::build_with(|mb| {
+            let _ = mb.v(Point3D::y());
+        })
+        .apply_to(
+            Rotate3D::build_with(|rb| {
+                let _ = rb.deg([90., 0., 0.]);
+            })
+            .apply_to(shape),
         )
+        .commented(&format!("{self:?}.snapfit_as_primitive()"))
     }
 
     /// Produce the SCAD primitive used to cut the hole for this snap-fit.
     ///
     /// Returns:
-    /// * `ScadObject` representing the hole shape.
-    pub fn hole_as_primitive(&self) -> ScadObject {
+    /// * `ScadObject3D` representing the hole shape.
+    pub fn hole_as_primitive(&self) -> ScadObject3D {
         let shape_2d = {
             let base = square_from_to(
                 Point2D::zeros()
@@ -200,24 +194,21 @@ impl SnapFitInserter {
             base + notch
         };
 
-        let shape = modifier_3d(
-            Translate3D::build_with(|tb| {
-                let _ = tb.v(Point3D::new(0., 0., -self.clearance));
-            }),
-            modifier_3d(
-                LinearExtrude::build_with(|lb| {
-                    let _ = lb.height(2.0_f64.mul_add(self.clearance, self.thickness));
-                }),
-                shape_2d,
-            ),
+        let shape = Translate3D::build_with(|tb| {
+            let _ = tb.v(Point3D::new(0., 0., -self.clearance));
+        })
+        .apply_to(
+            LinearExtrude::build_with(|lb| {
+                let _ = lb.height(2.0_f64.mul_add(self.clearance, self.thickness));
+            })
+            .apply_to(shape_2d),
         );
-        modifier_3d_commented(
-            Rotate3D::build_with(|rb| {
-                let _ = rb.deg([-90., 0., 0.]);
-            }),
-            shape,
-            &format!("{self:?}.hole_as_primitive()"),
-        )
+
+        Rotate3D::build_with(|rb| {
+            let _ = rb.deg([-90., 0., 0.]);
+        })
+        .apply_to(shape)
+        .commented(&format!("{self:?}.hole_as_primitive()"))
     }
 }
 
@@ -303,8 +294,8 @@ impl SnapFitNail {
     /// Produce the SCAD primitive for the snap-fit.
     ///
     /// Returns:
-    /// * `ScadObject` representing the solid nail part.
-    pub fn snapfit_as_primitive(&self) -> ScadObject {
+    /// * `ScadObject3D` representing the solid nail part.
+    pub fn snapfit_as_primitive(&self) -> ScadObject3D {
         let shape_2d = {
             let x_a0 = -SMALL_OVERLAP;
             let x_a1 = self.length - self.notch_length;
@@ -321,51 +312,45 @@ impl SnapFitNail {
                 Point2D::new(x_a0, y_a1),
             ];
 
-            let base_shape = primitive_2d(Polygon::build_with(|pb| {
+            let base_shape = Polygon::build_with(|pb| {
                 let _ = pb.points(p);
+            });
+
+            let end_shape = Translate2D::build_with(|tb| {
+                let _ = tb.v(Point2D::new(-SMALL_OVERLAP, 0.));
+            })
+            .apply_to(Square::build_with(|sb| {
+                let _ = sb.size([
+                    2.0_f64.mul_add(SMALL_OVERLAP, self.notch_fillet_size),
+                    self.thickness,
+                ]);
             }));
 
-            let end_shape = modifier_2d(
-                Translate2D::build_with(|tb| {
-                    let _ = tb.v(Point2D::new(-SMALL_OVERLAP, 0.));
-                }),
-                primitive_2d(Square::build_with(|sb| {
-                    let _ = sb.size([
-                        2.0_f64.mul_add(SMALL_OVERLAP, self.notch_fillet_size),
-                        self.thickness,
-                    ]);
-                })),
-            );
-
-            end_shape + both_fillet(&base_shape, self.notch_fillet_size)
+            end_shape + both_fillet(base_shape, self.notch_fillet_size)
         };
 
-        let shape = modifier_3d(
-            LinearExtrude::build_with(|lb| {
-                let _ = lb.height(self.width);
-            }),
-            shape_2d,
-        );
+        let shape = LinearExtrude::build_with(|lb| {
+            let _ = lb.height(self.width);
+        })
+        .apply_to(shape_2d);
 
-        modifier_3d_commented(
-            Mirror3D::build_with(|mb| {
-                let _ = mb.v(Point3D::x());
-            }),
-            modifier_3d(
-                Rotate3D::build_with(|rb| {
-                    let _ = rb.deg([0., -90., 0.]);
-                }),
-                shape,
-            ),
-            &format!("{self:?}.snapfit_as_primitive()"),
+        Mirror3D::build_with(|mb| {
+            let _ = mb.v(Point3D::x());
+        })
+        .apply_to(
+            Rotate3D::build_with(|rb| {
+                let _ = rb.deg([0., -90., 0.]);
+            })
+            .apply_to(shape),
         )
+        .commented(&format!("{self:?}.snapfit_as_primitive()"))
     }
 
     /// Produce the SCAD primitive used to cut the hole for this nail.
     ///
     /// Returns:
-    /// * `ScadObject` representing the hole shape.
-    pub fn hole_as_primitive(&self) -> ScadObject {
+    /// * `ScadObject3D` representing the hole shape.
+    pub fn hole_as_primitive(&self) -> ScadObject3D {
         let shape_2d = {
             let x_a0 = -SMALL_OVERLAP;
             let x_a1 = self.length - self.notch_length - self.clearance - self.notch_fillet_size;
@@ -388,41 +373,35 @@ impl SnapFitNail {
                 Point2D::new(x_a0, y_a1),
             ];
 
-            let base_shape = primitive_2d(Polygon::build_with(|pb| {
+            let base_shape = Polygon::build_with(|pb| {
                 let _ = pb.points(p);
-            }));
+            });
 
-            let round_shape = modifier_2d(
-                Translate2D::build_with(|tb| {
-                    let _ = tb.v([x_a2i, y_a2i]);
-                }),
-                primitive_2d(Circle::build_with(|cb| {
-                    let _ = cb.r(self.notch_fillet_size);
-                })),
-            );
+            let round_shape = Translate2D::build_with(|tb| {
+                let _ = tb.v([x_a2i, y_a2i]);
+            })
+            .apply_to(Circle::build_with(|cb| {
+                let _ = cb.r(self.notch_fillet_size);
+            }));
 
             base_shape + round_shape
         };
 
-        let shape = modifier_3d(
-            Translate3D::build_with(|tb| {
-                let _ = tb.v([0., 0., -self.clearance / 2.]);
-            }),
-            modifier_3d(
-                LinearExtrude::build_with(|lb| {
-                    let _ = lb.height(self.width + self.clearance);
-                }),
-                shape_2d,
-            ),
+        let shape = Translate3D::build_with(|tb| {
+            let _ = tb.v([0., 0., -self.clearance / 2.]);
+        })
+        .apply_to(
+            LinearExtrude::build_with(|lb| {
+                let _ = lb.height(self.width + self.clearance);
+            })
+            .apply_to(shape_2d),
         );
 
-        modifier_3d_commented(
-            Rotate3D::build_with(|rb| {
-                let _ = rb.deg([0., 90., 0.]);
-            }),
-            shape,
-            &format!("{self:?}.hole_as_primitive()"),
-        )
+        Rotate3D::build_with(|rb| {
+            let _ = rb.deg([0., 90., 0.]);
+        })
+        .apply_to(shape)
+        .commented(&format!("{self:?}.hole_as_primitive()"))
     }
 }
 
