@@ -182,6 +182,36 @@ impl Plane {
             self.y_axis.z,
         ))
     }
+
+    /// Returns the origin point of the plane.
+    ///
+    /// # Returns
+    ///
+    /// * The origin point in 3D space.
+    #[inline]
+    pub fn origin(&self) -> Point3D {
+        self.origin
+    }
+
+    /// Returns the normalized X-axis direction of the plane.
+    ///
+    /// # Returns
+    ///
+    /// * The normalized X-axis direction vector.
+    #[inline]
+    pub fn x_axis(&self) -> Point3D {
+        self.x_axis
+    }
+
+    /// Returns the normalized Y-axis direction of the plane.
+    ///
+    /// # Returns
+    ///
+    /// * The normalized Y-axis direction vector.
+    #[inline]
+    pub fn y_axis(&self) -> Point3D {
+        self.y_axis
+    }
 }
 
 #[cfg(test)]
