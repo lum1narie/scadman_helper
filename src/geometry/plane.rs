@@ -170,7 +170,7 @@ impl Plane {
             .apply_to(target),
         )
         .commented(&format!(
-            "as plane o:[{}, {}, {}], x:[{}, {}, {}], y: [{}, {}, {}]",
+            "as plane o:[{}, {}, {}], x:[{}, {}, {}], y:[{}, {}, {}]",
             self.origin.x,
             self.origin.y,
             self.origin.z,
@@ -402,7 +402,7 @@ mod tests {
             let modified_object = plane.as_modifier(target_object.clone());
             assert_eq!(
                 modified_object.to_code(),
-                r"/* as plane o:[10, 20, 30], x:[0, 0, 1], y: [0, 1, 0] */
+                r"/* as plane o:[10, 20, 30], x:[0, 0, 1], y:[0, 1, 0] */
 translate([10, 20, 30])
   rotate(a = [0, -89.99999915, 0])
     sphere(r = 2);
@@ -419,7 +419,7 @@ translate([10, 20, 30])
             let modified_object = plane.as_modifier(target_object);
             assert_eq!(
                 modified_object.to_code(),
-                r"/* as plane o:[5, -3, 12], x:[0.4315290514800427, 0.89608213307335, 0.10401677035675296], y: [-0.17069653067490384, 0.19433215688782346, -0.9659698272797542] */
+                r"/* as plane o:[5, -3, 12], x:[0.4315290514800427, 0.89608213307335, 0.10401677035675296], y:[-0.17069653067490384, 0.19433215688782346, -0.9659698272797542] */
 translate([5, -3, 12])
   rotate(a = [-76.22499996, -5.97052146, 64.28578488])
     sphere(r = 2);
