@@ -62,7 +62,12 @@ reproducibility.
 ### Development AI Rule
 
 - Testing
-  - Add test in `./tests` diretctories if you make new function.
+  - If you add a new function, you must add tests for it.
+  - Prefer writing tests in the same source file using `#[cfg(test)]`.
+  - Add tests in `./tests` when integration tests are more suitable.
+  - Never change the things already exists in `#[cfg(test)]`.
+    - Only unless the function specification change is directly
+      requested in the prompt.
   - Never change the things already exists in `./tests`.
     - Only unless the function specification change is directly
       requested in the prompt.

@@ -189,7 +189,7 @@ impl Plane {
     ///
     /// * The origin point in 3D space.
     #[inline]
-    pub fn origin(&self) -> Point3D {
+    pub const fn origin(&self) -> Point3D {
         self.origin
     }
 
@@ -199,7 +199,7 @@ impl Plane {
     ///
     /// * The normalized X-axis direction vector.
     #[inline]
-    pub fn x_axis(&self) -> Point3D {
+    pub const fn x_axis(&self) -> Point3D {
         self.x_axis
     }
 
@@ -209,7 +209,7 @@ impl Plane {
     ///
     /// * The normalized Y-axis direction vector.
     #[inline]
-    pub fn y_axis(&self) -> Point3D {
+    pub const fn y_axis(&self) -> Point3D {
         self.y_axis
     }
 }

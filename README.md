@@ -17,3 +17,5 @@ This library provides the following features:
 - `geometry`: Handles geometric elements such as planes.
 - `shapes`: Generates predefined shapes (honeycombs, screws, etc.).
 - `transform`: Provides object transformation functionalities.
+  - Includes 3D edge fillet helpers. Inputs with near-parallel or
+    opposite face vectors are invalid and may panic.

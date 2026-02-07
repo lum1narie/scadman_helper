@@ -12,6 +12,141 @@ const SMALL_OVERLAP: f64 = 0.025;
 /// The default resolution used for 3D fillet arcs.
 pub const DEFAULT_FILLET_FN: u64 = 64;
 
+/// Computes the edge-aligned frame and projected face directions.
+///
+/// # Arguments
+///
+/// - `from`: Start point of the edge.
+/// - `to`: End point of the edge.
+/// - `y_fwd`: Face direction in the `from -> to` frame.
+/// - `y_inv`: Face direction in the `to -> from` frame.
+///
+/// # Returns
+///
+/// `(edge_len, rotation, v0, v1)` where:
+/// - `edge_len` is the edge length.
+/// - `rotation` maps local XY plane to the edge-aligned plane.
+/// - `v0`, `v1` are projected 2D face directions in local coordinates.
+///
+/// # Panics
+///
+/// Panics if:
+/// - `from` and `to` are identical (zero-length edge),
+/// - either plane cannot be constructed from the given vectors.
+fn edge_frame(
+    from: Point3D,
+    to: Point3D,
+    y_fwd: Point3D,
+    y_inv: Point3D,
+) -> (f64, na::Rotation3<f64>, na::Vector2<f64>, na::Vector2<f64>) {
+    let edge = to - from;
+    let edge_len = edge.norm();
+    assert!(edge_len > PARALLEL_EPS, "edge length must be non-zero");
+
+    let p0 = Plane::try_new(from, edge, y_fwd).expect("invalid plane with y_fwd");
+    let p1 = Plane::try_new(from, edge, y_inv).expect("invalid plane with y_inv");
+
+    let rot =
+        na::Rotation3::rotation_between(&Point3D::z(), &edge).expect("invalid rotation for edge");
+    let inv_rot = rot.inverse();
+    let v0 = (inv_rot * p0.y_axis()).xy();
+    let v1 = (inv_rot * p1.y_axis()).xy();
+
+    (edge_len, rot, v0, v1)
+}
+
+/// Computes key 2D points of the fillet profile from two face vectors.
+///
+/// # Arguments
+///
+/// - `v0`: First face direction projected to local XY.
+/// - `v1`: Second face direction projected to local XY.
+/// - `r`: Fillet radius.
+///
+/// # Returns
+///
+/// `(o, h0, h1)` where:
+/// - `o` is the fillet circle center in local XY.
+/// - `h0`, `h1` are tangent points on each face direction.
+///
+/// # Panics
+///
+/// Panics if:
+/// - either direction vector is degenerate,
+/// - the two vectors are nearly parallel or anti-parallel.
+fn fillet_profile_points(
+    v0: na::Vector2<f64>,
+    v1: na::Vector2<f64>,
+    r: f64,
+) -> (na::Vector2<f64>, na::Vector2<f64>, na::Vector2<f64>) {
+    let n0 = v0.norm();
+    let n1 = v1.norm();
+    assert!(n0 > PARALLEL_EPS, "v0 must be non-zero");
+    assert!(n1 > PARALLEL_EPS, "v1 must be non-zero");
+
+    let u0 = v0 / n0;
+    let u1 = v1 / n1;
+    let bisector = u0 + u1;
+    let bisector_norm = bisector.norm();
+    assert!(
+        bisector_norm > PARALLEL_EPS,
+        "face directions are nearly opposite"
+    );
+
+    let cos_theta = u0.dot(&u1).clamp(-1.0, 1.0);
+    let half_angle = ((1.0 - cos_theta) / 2.0).sqrt();
+    let sin_theta = cos_theta.mul_add(-cos_theta, 1.0).sqrt();
+    assert!(
+        half_angle > PARALLEL_EPS && sin_theta > PARALLEL_EPS,
+        "face directions are nearly parallel"
+    );
+
+    let lo = r / half_angle;
+    let o = bisector / bisector_norm * lo;
+
+    let lh = r * (1.0 + cos_theta) / sin_theta;
+    let h0 = u0 * lh;
+    let h1 = u1 * lh;
+
+    (o, h0, h1)
+}
+
+/// Builds the 2D fillet wedge used for both convex and concave shapes.
+///
+/// # Arguments
+///
+/// - `o`: Fillet center in local XY.
+/// - `h0`: Tangent point on first face.
+/// - `h1`: Tangent point on second face.
+/// - `r`: Fillet radius.
+///
+/// # Returns
+///
+/// A 2D shape representing the wedge minus the inner arc circle.
+fn fillet_shape_2d(
+    o: na::Vector2<f64>,
+    h0: na::Vector2<f64>,
+    h1: na::Vector2<f64>,
+    r: f64,
+) -> ScadObject2D {
+    let outer = Polygon::build_with(|pb| {
+        let overlap = -o / o.norm() * SMALL_OVERLAP;
+        let _ = pb.points(vec![overlap, h0, o, h1]);
+    });
+    let inner = Translate2D::build_with(|tb| {
+        let _ = tb.v(o);
+    })
+    .apply_to(Circle::build_with(|cb| {
+        let _ = cb.r(r).r#fn(DEFAULT_FILLET_FN);
+    }));
+
+    outer - inner
+}
+
+fn fillet_plane(from: Point3D, rot: na::Rotation3<f64>) -> Plane {
+    Plane::try_new(from, rot * Point3D::x(), rot * Point3D::y()).expect("invalid fillet plane")
+}
+
 /// Applies a convex fillet to one edge of a 3D shape.
 ///
 /// `from` and `to` define the target edge.
@@ -59,52 +194,17 @@ pub fn convex_fillet_edge(
     y_inv: Point3D,
     r: f64,
 ) -> ScadObject3D {
-    const N: u64 = 64;
-    let e = to - from;
-    let n = e.norm();
-    assert!(e.norm() > 1e-10);
-
-    let p0 = Plane::try_new(from, e, y_fwd).expect("invalid plane with y_fwd");
-    let p1 = Plane::try_new(from, e, y_inv).expect("invalid plane with y_inv");
-
-    let rot = na::Rotation3::rotation_between(&Point3D::z(), &e).unwrap();
-    let inv_rot = rot.inverse();
-
-    let v0 = (inv_rot * p0.y_axis()).xy();
-    let v1 = (inv_rot * p1.y_axis()).xy();
-
-    let n0 = v0.norm();
-    let n1 = v1.norm();
-    let b = v0 / n0 + v1 / n1;
-    let cos_theta = v0.dot(&v1) / (n0 * n1);
-    let lo = r / ((1.0 - cos_theta) / 2.0).sqrt();
-
-    let o = b / b.norm() * lo;
-
-    let lh = r * (1. + cos_theta) / (1. - cos_theta.powi(2)).sqrt();
-    let h0 = v0 / n0 * lh;
-    let h1 = v1 / n1 * lh;
-
-    let void_shape_2d = {
-        let outer = Polygon::build_with(|pb| {
-            let _ = pb.points(vec![(-o / o.norm() * SMALL_OVERLAP), h0, o, h1]);
-        });
-        let inner = Translate2D::build_with(|tb| {
-            let _ = tb.v(o);
-        })
-        .apply_to(Circle::build_with(|cb| {
-            let _ = cb.r(r).r#fn(DEFAULT_FILLET_FN);
-        }));
-        outer - inner
-    };
-    let void_plane = Plane::try_new(from, rot * Point3D::x(), rot * Point3D::y()).unwrap();
+    let (edge_len, rot, v0, v1) = edge_frame(from, to, y_fwd, y_inv);
+    let (o, h0, h1) = fillet_profile_points(v0, v1, r);
+    let void_shape_2d = fillet_shape_2d(o, h0, h1, r);
+    let void_plane = fillet_plane(from, rot);
     let void_shape = void_plane.as_modifier(
         Translate3D::build_with(|tb| {
             let _ = tb.v([0., 0., -SMALL_OVERLAP]);
         })
         .apply_to(
             LinearExtrude::build_with(|eb| {
-                let _ = eb.height(n + 2. * SMALL_OVERLAP);
+                let _ = eb.height(2.0_f64.mul_add(SMALL_OVERLAP, edge_len));
             })
             .apply_to(void_shape_2d),
         ),
@@ -120,24 +220,27 @@ pub fn convex_fillet_edge(
 ///
 /// `from` and `to` define the target edge.
 ///
-/// `y0` is the local Y direction of one face touching the edge when
+/// `y_fwd` is the local Y direction of one face touching the edge when
 /// the local X direction is `from -> to`.
 ///
-/// `y1` is the local Y direction of the other touching face when
+/// `y_inv` is the local Y direction of the other touching face when
 /// the local X direction is `to -> from`.
+///
+/// The `Plane` axis direction follows the same orientation rules as
+/// [`Plane::try_new`].
 ///
 /// # Arguments
 ///
 /// - `target`: Base shape to be filleted.
 /// - `from`: Start point of the edge.
 /// - `to`: End point of the edge.
-/// - `y0`: Face direction vector for the `from -> to` frame.
-/// - `y1`: Face direction vector for the `to -> from` frame.
+/// - `y_fwd`: Face direction vector for the `from -> to` frame.
+/// - `y_inv`: Face direction vector for the `to -> from` frame.
 /// - `r`: Fillet radius.
 ///
 /// # Returns
 ///
-/// A new shape with the concave fillet cut from `target`.
+/// A new shape with the concave fillet added to `target`.
 ///
 /// # Panics
 ///
@@ -147,75 +250,40 @@ pub fn convex_fillet_edge(
 ///
 /// # Notes
 ///
-/// If either face direction is flipped, the cut may be created on an
-/// unintended side of the edge.
+/// `y_fwd` and `y_inv` must point to the real face directions as seen
+/// from `from`.
+///
+/// If either vector is flipped to the opposite direction, this function
+/// may cut the wrong side and produce unexpected geometry.
 pub fn concave_fillet_edge(
     target: ScadObject3D,
     from: Point3D,
     to: Point3D,
-    y0: Point3D,
-    y1: Point3D,
+    y_fwd: Point3D,
+    y_inv: Point3D,
     r: f64,
 ) -> ScadObject3D {
-    let e = to - from;
-    let n = e.norm();
-    assert!(e.norm() > PARALLEL_EPS);
-
-    let p0 = Plane::try_new(from, e, y0).expect("invalid plane with y0");
-    let p1 = Plane::try_new(from, e, y1).expect("invalid plane with y1");
-
-    let rot = na::Rotation3::rotation_between(&Point3D::z(), &e).unwrap();
-    let inv_rot = rot.inverse();
-
-    let v0 = (inv_rot * p0.y_axis()).xy();
-    let v1 = (inv_rot * p1.y_axis()).xy();
-
-    let n0 = v0.norm();
-    let n1 = v1.norm();
-    let b = v0 / n0 + v1 / n1;
-    let cos_theta = v0.dot(&v1) / (n0 * n1);
-    let lo = r / ((1.0 - cos_theta) / 2.0).sqrt();
-    let o = b / b.norm() * lo;
-
-    let lh = r * (1. + cos_theta) / (1. - cos_theta.powi(2)).sqrt();
-    let h0 = v0 / n0 * lh;
-    let h1 = v1 / n1 * lh;
-
-    let fill_shape_2d = {
-        let outer = Polygon::build_with(|pb| {
-            let _ = pb.points(vec![(-o / o.norm() * SMALL_OVERLAP), h0, o, h1]);
-        });
-        let inner = Translate2D::build_with(|tb| {
-            let _ = tb.v(o);
-        })
-        .apply_to(Circle::build_with(|cb| {
-            let _ = cb.r(r).r#fn(DEFAULT_FILLET_FN);
-        }));
-        outer - inner
-    };
-    let fill_plane = Plane::try_new(from, rot * Point3D::x(), rot * Point3D::y()).unwrap();
+    let (edge_len, rot, v0, v1) = edge_frame(from, to, y_fwd, y_inv);
+    let (o, h0, h1) = fillet_profile_points(v0, v1, r);
+    let fill_shape_2d = fillet_shape_2d(o, h0, h1, r);
+    let fill_plane = fillet_plane(from, rot);
     let fill_shape = fill_plane.as_modifier(
         LinearExtrude::build_with(|eb| {
-            let _ = eb.height(n);
+            let _ = eb.height(edge_len);
         })
         .apply_to(fill_shape_2d),
     );
 
     (target + fill_shape).commented(&format!(
-        "concave_fillet_edge from:({}, {}, {}), to:({}, {}, {}), y0:({}, {}, {}), y1:({}, {}, {}), r:{}",
-        from.x, from.y, from.z, to.x, to.y, to.z, y0.x, y0.y, y0.z, y1.x, y1.y, y1.z, r
+        "concave_fillet_edge from:({}, {}, {}), to:({}, {}, {}), y_fwd:({}, {}, {}), y_inv:({}, {}, {}), r:{}",
+        from.x, from.y, from.z, to.x, to.y, to.z, y_fwd.x, y_fwd.y, y_fwd.z, y_inv.x, y_inv.y, y_inv.z, r
     ))
-}
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-enum FilletKind {
-    Convex,
-    Concave,
 }
 
 #[cfg(test)]
 mod tests {
     use crate::geometry::builders::square_from_to;
+    use std::panic::AssertUnwindSafe;
 
     use super::*;
 
@@ -379,9 +447,11 @@ difference() {
         let target = concave_fillet_edge(target, from_0, to_0, y1_0, y2_0, r_0);
         let target = concave_fillet_edge(target, from_1, to_1, y1_1, y2_1, r_1);
 
-        assert_eq!(target.to_code(), r"/* concave_fillet_edge from:(5, 0, 5), to:(5, 5, 5), y0:(1, 0, 1), y1:(1, 0, 0), r:1 */
+        assert_eq!(
+            target.to_code(),
+            r"/* concave_fillet_edge from:(5, 0, 5), to:(5, 5, 5), y_fwd:(1, 0, 1), y_inv:(1, 0, 0), r:1 */
 union() {
-  /* concave_fillet_edge from:(0, 0, 5), to:(0, 5, 5), y0:(-1, 0, 0), y1:(1, 0, 1), r:1 */
+  /* concave_fillet_edge from:(0, 0, 5), to:(0, 5, 5), y_fwd:(-1, 0, 0), y_inv:(1, 0, 1), r:1 */
   union() {
     mirror([0, 1, 0])
       rotate(a = [90, 0, 0])
@@ -412,6 +482,41 @@ union() {
             circle(r = 1, $fn = 64);
         }
 }
-");
+"
+        );
+    }
+
+    #[test]
+    fn test_convex_fillet_edge_panics_on_parallel_faces() {
+        let target = Cube::build_with(|cb| {
+            let _ = cb.size([5.0, 5.0, 5.0]);
+        });
+        let from = Point3D::new(0.0, 0.0, 0.0);
+        let to = Point3D::new(5.0, 0.0, 0.0);
+        let y_fwd = Point3D::new(0.0, 1.0, 0.0);
+        let y_inv = Point3D::new(0.0, 2.0, 0.0);
+
+        let result = std::panic::catch_unwind(AssertUnwindSafe(|| {
+            drop(convex_fillet_edge(target, from, to, y_fwd, y_inv, 1.0));
+        }));
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_concave_fillet_edge_panics_on_opposite_faces() {
+        let target = Cube::build_with(|cb| {
+            let _ = cb.size([5.0, 5.0, 5.0]);
+        });
+        let from = Point3D::new(0.0, 0.0, 0.0);
+        let to = Point3D::new(5.0, 0.0, 0.0);
+        let y_fwd = Point3D::new(0.0, 1.0, 0.0);
+        let y_inv = Point3D::new(0.0, -1.0, 0.0);
+
+        let result = std::panic::catch_unwind(AssertUnwindSafe(|| {
+            drop(concave_fillet_edge(target, from, to, y_fwd, y_inv, 1.0));
+        }));
+
+        assert!(result.is_err());
     }
 }
