@@ -105,15 +105,12 @@ TODO:
 - This project uses gitflow.
 - This project uses gitmoji.
 - Commit message must be in English.
-- Commit title format: `<type>: <emoji>(<context>) <body>`
+- Commit title format: `<emoji>(<context>) <body>`
   (e.g., 'refactor: :recycle:(backend) split `calc_fraction()` into
   multiple functions')
   - Select one of emoji from the list below apppropriate to show
     context of the commit.
     - Refer `kind` of emoji.
-  - `<type>`: Commit type (e.g., fix, feat, docs). `type` column in
-    the table.
-    - Must match one of the IDs from the emoji list.
   - `<emoji>`: The emoji, `emoji` column in the table, written as a
     string enclosed in double colons (e.g., `:bug:`, `:sparkles:`,
     `:books:`, `:rocket:`), NOT as a Unicode emoji.
@@ -147,7 +144,7 @@ TODO:
 
 The meaning of row:
 
-- `type`, `emoji`: as above
+- `emoji`: as above
 - `description`: The description of emoji.
 - `kind`: The category of emoji.
 - `utf8`: emoji in utf8 format.
